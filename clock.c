@@ -1,6 +1,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "define.h"
+#include "type.h"
 #include <stdio.h>
 
 
@@ -9,13 +10,14 @@ extern Data data;
 
 void *clock_timer(void *p_data){
 	while(1){
-		if( (data.ss0 & data.ss1 & data.ss2 & data.ss3 & data.ss4) == Lo ){
-			data.sclk++;
+		if( (data.SS1 & data.SS2 & data.SS3 ) == Lo ){
+			Sleep_HalfPeriod;
+			data.SCK++;
 			//printf("time:%hhd\n",data.sclk);
 		}else{
-			data.sclk = Hi;
+			data.SCK = data.CPOL;
 		}
-		sleep_halfperiod;
+		Sleep_HalfPeriod;
 	}
 	
 	return NULL;

@@ -1,81 +1,133 @@
+/* --------------------------------
+file:       data_io.c
+brief:      データバスアクセスを行う関数群
+ver:        1.0.0   
+-------------------------------- */
+/*インクルードファイル*/
 #include "spi.h"
 #include "timer.h"
+#include "type.h"
 #include "define.h"
 #include <stdio.h>
 
+/*外部宣言*/
 extern Data data;
 
-void data_output(char send_data,Kind kind){
-    /*クロックのHi時に送信*/
-    int sent_count = 0;
-    unsigned char Bit_Mask = 0x80;  // 1000 0000
-    unsigned char data_bit = 0;
-    unsigned char send_flag = false;
+/*グローバル変数*/
 
-    /*8bit送信時終了*/
-    while( sent_count <= 7 ){
-        /*クロック信号がHi時データをセットする*/
-        /*谷タイミングで8bitデータを1bitずつセットする*/
-        if(data.sclk == Hi && send_flag == true){
-            /*データの送信するデータをMSBから順にセット*/
-            data_bit = send_data & (Bit_Mask>>sent_count);
-            if(kind == SCLK){
-                /*Do nothing*/
-            }else if(kind == SIMO){
-                data.simo = data_bit >> (7-sent_count) ;
-                printf("master send : %hhd\n",data.simo);
-            }else if(kind == SOMI){
-                data.somi = data_bit >> (7-sent_count);
-            }else if(kind == SS){
-                /*Do nothing*/
-            }
-            
-            sent_count++;
-            send_flag = false;
-        }else if(data.sclk == Lo){
-            send_flag = true;
-        }
+/*プロトタイプ宣言*/
+U1 Simo(U1 *);
+U1 Miso(U1 *);
+U1 Read(DataIo );
+VD Write(U1,DataIo );
+VD Sync(U1 );
+
+
+/*------------------------------*/
+/* 引数がNULLのときはSlaveで返値は読み込み時の値*/
+U1 Simo(U1 *p_buff){
+    U1 return_value = 0;
+
+    /* salve  Input*/
+    if(p_buff == NULL){
+         return_value = Read(SIMO);
+    }
+    /* master Output */
+    else{
+        Write( *p_buff ,SIMO);
+        Sleep_Period;
     }
 
-
+    return return_value;
 }
 
-char data_input(unsigned char *receive_data,Kind kind){
-    char receive_flag = false;
-    int receive_count = 7;
-    unsigned char Bit_Mask = 0x80;  // 1000 0000
-    unsigned char receive = 0;
-    unsigned char send_flag = false;
 
+/* 引数がNULLのときはMaster */
+U1 Miso(U1 *p_buff){
+     U1 return_value = 0;
 
-    /*8bit受信時終了*/
-    while( receive_count >= 0 ){
-        /*クロック信号がHi時データをセットする*/
-        /*山タイミングで8bitデータを1bitずつ読み込む*/
-        if(data.sclk == Lo && send_flag == true){
-            
-            if(kind == SCLK){
-                /*Do nothing*/
-            }else if(kind == SIMO){
-                receive |= (data.simo << receive_count);
-                printf("slave  read : %hhd\n",data.simo);
-            }else if(kind == SOMI){
-                receive |= (data.somi << receive_count);
-            }else if(kind == SS){
-                /*Do nothing*/
-            }
-            
-            receive_count--;
-            send_flag = false;
-        }else if(data.sclk == Hi){
-            send_flag = true;
+    /* salve  Input*/
+    if(p_buff == NULL){
+         return_value = Read(MISO);
+
+    /* master Output */
+    }else{
+        Write( *p_buff ,MISO);
+    }
+
+    return return_value;   
+}
+
+/*Read*/
+U1 Read(DataIo dataIo ){
+    U1  return_value = 0;
+    U1  buff = 0;
+    U1  count;
+    U1 mask;
+    const U1 MSB_MASK = 0x80;
+
+    for( count = 0 ; count < DATA_LENGTH ; count++ ){
+
+         /* wait clock bit */
+        Sync( data.CPHA );
+
+        /*データ読み込み*/
+        if( dataIo == SIMO ){
+            buff = data.SIMO;
+        }else if( dataIo == MISO ){
+            buff = data.MISO;
         }
+
+        /*ビットマスク用*/
+        mask = (MSB_MASK >> count);
         
-        if(receive_count < 0){
-            *receive_data = receive;
-            receive_flag = true;
+        /* read bit data */
+        return_value |= (mask & ( buff << (DATA_LENGTH - 1 - count) ));
+    }
+
+    return return_value;
+}
+
+
+/*Write*/
+VD Write(U1 msg,DataIo dataIo){
+    S4 count;
+    U1 mask;
+    const U1 MSB_MASK = 0x80;
+
+    for( count = 0 ; count < DATA_LENGTH ; count++ ){
+        mask = MSB_MASK >> count;
+
+        /* wait clock bit */
+        Sync(~data.CPHA);
+        
+        /* deta set */
+        data.SIMO = ( mask & msg ) >> (DATA_LENGTH - count - 1 ) ;
+    }
+    Sleep_Period;
+}
+
+
+
+/*クロック信号に同期して遅延させる関数*/
+VD Sync(U1 cpha ){
+    U1  cpol = data.CPOL;
+    U1  old_sck = data.SCK;
+    U1  now_sck = data.SCK;
+
+    while( true ){
+        now_sck = data.SCK;
+        
+        if( cpol == cpha && old_sck == Hi && now_sck == Lo){
             break;
         }
-    }    
-    return receive_flag;
+
+        if( cpol != cpha && old_sck == Lo && now_sck == Hi){
+            break;
+        }
+
+        old_sck = now_sck;
+        Sleep_QuarterPeriod;
+    };
+
 }

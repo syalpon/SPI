@@ -1,57 +1,79 @@
+/* --------------------------------
+file:       master.c
+brief:      マスタ関係
+ver:        1.0.0   
+-------------------------------- */
+
+/*インクルードファイル*/
 #include "spi.h"
 #include "timer.h"
 #include "define.h"
+#include "type.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/*global変数*/
+/*外部関数宣言*/
 extern Data data;
+extern U1 Simo(U1 *);
+extern U1 Miso(U1 *);
 
-extern char data_input(Kind );
-extern void data_output(char ,Kind );
+/*プロトタイプ宣言*/
+VP master(VP );
+S4 SelectSlave(VD );
 
-// マスタ
-void *master(void *p_data){
-    const size_t BUFF_SIZE = 64;
-    char buff[BUFF_SIZE];
-    int select = 0;
-	do{
-        //文字列取得
-        printf(">");
-        fgets(buff,BUFF_SIZE,stdin);
+/*------------------------------*/
+/* マスタ */
+VP master(VP p_data){
 
-        //オーバーフロー時
-        if(buff[strlen(buff)-1] != '\n'){
-            while('\n' != getchar() );
-        }
+    while(SelectSlave()){
 
-        //q が押された場合終了
-		if( strcmp(buff,"q\n") == 0 ){
-			break;
-		}
-
-        //文字列->数値変換
-        select = atoi(buff);
-
-        
-        switch(select){
-            case 1 : 
-                data.ss1 = Lo;
-                break;
-            case 2 : 
-                data.ss2 = Lo;
-                break;
-            case 3 :
-                data.ss3 = Lo;
-                break;
-            default :
-                continue;
-        }
-        /* 0111 1001のデータを送信 */
-        data_output((char)0x79,SIMO);
-        sleep_period;
-	}while(1);
+        /*0111 1001*/
+        U1 buff = 0x79; 
+        /*データを送信 */
+        Simo(&buff);
+        /*データの受信*/
+        //buff = Miso(NULL);
+        Sleep_Period;
+	};
 
 	return NULL;
+}
+
+
+/* スレーブ選択関数 */
+/* 選択が終了されるときFLASEを返す */
+S4 SelectSlave(VD ){
+    S4 select               = 0;
+    S4 return_value         = TRUE;
+    U1 buff[BUFF_SIZE]      = {0};     /*受信バッファ*/
+    //文字列取得
+    printf("master>");
+    fgets(buff,BUFF_SIZE,stdin);
+
+    //オーバーフロー時
+    if(buff[strlen(buff)-1] != '\n'){
+        while('\n' != getchar() );
+    }
+
+    //q が押された場合終了
+    if( strcmp(buff,"q\n") == 0 || strcmp(buff,"\n") == 0){
+        return_value = FALSE;
+    }
+    
+    switch(atoi(buff)){
+        case 1 : 
+            data.SS1 = Lo;
+            break;
+        case 2 : 
+            data.SS2 = Lo;
+            break;
+        case 3 :
+            data.SS3 = Lo;
+            break;
+        default :
+        /*Do Nothing*/
+            break;
+    }
+    return return_value;
 }

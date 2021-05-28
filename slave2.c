@@ -1,26 +1,34 @@
+/* --------------------------------
+file:       slave2.c
+brief:      スレーブ2
+ver:        1.0.0   
+-------------------------------- */
+/*インクルードファイル*/
 #include "spi.h"
 #include "timer.h"
+#include "type.h"
 #include "define.h"
 #include <stdio.h>
 
-/*global変数*/
+/*グローバル変数*/
 extern Data data;
+extern U1 Miso(U1 *);
+extern U1 Simo(U1 *);
+/*プロトタイプ宣言*/
 
-extern char data_input(unsigned char *,Kind );
-extern void data_output(char ,Kind );
 
-void *slave2(void *p_data){
-    unsigned char buff;
-    while(1){
-        if(data.ss2 == Lo ){
-            /*山タイミングで取得する為に半周期遅延させる*/
-            //sleep_halfperiod;
-            printf("slave2 Receiving\n");
-            data_input(&buff,SIMO);
-            printf("slave2 Received : %x\n",buff);
-            data.ss2 = Hi;
+/*------------------------------*/
+VP slave2(VP p_data){
+    U1 buff = 0;
+    while(true){
+        if(data.SS2 == Lo){
+            printf("slave1 Receiving\n");
+            buff = Simo(NULL);
+            printf("slave1 Received : %x\n",buff);
+            data.SS2 = Hi;
+            Sleep_QuarterPeriod;
         }
-        sleep_halfperiod;
+        Sleep_QuarterPeriod;
     }
 	return NULL;
-}
+} 
