@@ -7,7 +7,7 @@ class OBJECT_CLASS
 {
 public:         
     OBJECT_CLASS();         /*コンストラクタ*/
-protected:
+public:
     U4 u4_object_number;    /*オブジェクト識別子*/
 };
 

@@ -13,8 +13,4 @@
 /* 3 : H actiove , L->H trigger */
 #define SPI_MODE ((U1)2) 
 
-/*ƒXƒŒ[ƒu‚Ì”*/
-#define SLAVE_NUM ((uint1)4)
-
-
 #endif
