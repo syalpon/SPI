@@ -22,7 +22,7 @@ int main()
     pthread_t pt[THREAD_NUM];
     S4 ret[THREAD_NUM];
     S4 ret_sum = 0;
-
+    
     /*初回処理*/
     u1p_addr_table[0] = &u1_CLK;
     u1p_addr_table[1] = &u1_DO;
@@ -33,11 +33,11 @@ int main()
     }
 
     /*スレッド起動*/
-    ret[0] = pthread_create(&pt[0] ,NULL,(VP(*)(VP))vp_master_thrad,(VP)u1p_addr_table);     /*マスタ*/
+    ret[0] = pthread_create(&pt[0] ,nullptr,(VP(*)(VP))vp_master_thrad,(VP)u1p_addr_table);     /*マスタ*/
     ret_sum += ret[0] ;
     for(U1 i=1 ; i<THREAD_NUM ; i++ )
     {
-        ret[i] = pthread_create(&pt[i] ,NULL,(VP(*)(VP))vp_slave_thrad,(VP)u1p_addr_table);     /*スレーブ*/
+        ret[i] = pthread_create(&pt[i] ,nullptr,(VP(*)(VP))vp_slave_thrad,(VP)u1p_addr_table);     /*スレーブ*/
         ret_sum += ret[i] ;
     }
 
@@ -46,7 +46,7 @@ int main()
 		printf("thread create error\n");
 	}else{
 		/*マスタが終わるまで待機*/
-		pthread_join(pt[0],NULL);
+		pthread_join(pt[0],nullptr);
 	}
 
     return 0;
